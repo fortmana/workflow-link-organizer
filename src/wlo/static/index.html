@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Link Organizer</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+<body x-data="app()" x-init="init()">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      WLO
+      <span>Workflow Link Organizer</span>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-item" :class="{active: section === 'bookmarks'}"
+          @click="section = 'bookmarks'">
+        <span class="nav-icon">&#9670;</span>
+        <span>Links</span>
+      </li>
+      <li class="nav-item" :class="{active: section === 'settings'}"
+          @click="section = 'settings'">
+        <span class="nav-icon">&#9881;</span>
+        <span>Settings</span>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="main-header">
+      <h1 x-text="sectionLabel()"></h1>
+      <span class="subtitle" x-text="sectionSubtitle()"></span>
+    </header>
+
+    <div class="section-body">
+
+      <!-- Bookmarks -->
+      <div x-show="section === 'bookmarks'">
+        <div class="section-header">
+          <h2>Projects</h2>
+          <span class="count" x-text="projects.length + ' projects'"></span>
+          <button class="btn" style="margin-left:auto" @click="collapseAll()" x-show="projects.length > 0" title="Collapse all">&#8964;</button>
+          <button class="btn" @click="expandAll()" x-show="projects.length > 0" title="Expand all">&#8963;</button>
+          <button class="btn btn-primary" @click="showAddProject = !showAddProject">
+            + New Project
+          </button>
+        </div>
+
+        <!-- Quick-add bar -->
+        <div class="card" style="margin-bottom:16px;padding:10px 14px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="field-input" style="flex:2;min-width:160px"
+                   x-model="quickAdd.url"
+                   @keydown.enter="submitQuickAdd()"
+                   placeholder="URL or path">
+            <input class="field-input" style="flex:1;min-width:120px"
+                   x-model="quickAdd.name"
+                   @keydown.enter="submitQuickAdd()"
+                   placeholder="Name (optional)">
+            <select class="field-input" style="flex:1;min-width:120px"
+                    x-model="quickAdd.project_id">
+              <option value="">— select project —</option>
+              <template x-for="p in projects" :key="p.id">
+                <option :value="p.id" x-text="p.name"></option>
+              </template>
+            </select>
+            <button class="btn btn-primary" style="white-space:nowrap" @click="submitQuickAdd()">+ Add</button>
+          </div>
+          <div x-show="quickAddStatus" style="font-size:12px;margin-top:6px"
+               :style="quickAddStatus === 'ok' ? 'color:var(--success,#4caf50)' : 'color:var(--danger,#f44336)'"
+               x-text="quickAddMessage"></div>
+        </div>
+
+        <!-- Add project form -->
+        <div class="card" x-show="showAddProject" style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">New Project</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Name</div>
+              <input class="field-input" x-model="newProject.name" placeholder="e.g. Client A" style="width:220px">
+            </div>
+            <div style="position:relative" @click.outside="colorPickerOpen = false">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Color</div>
+              <button type="button" @click="colorPickerOpen = !colorPickerOpen"
+                      :style="'width:44px;height:32px;background:'+newProject.color+';border:1px solid var(--border);border-radius:5px;cursor:pointer'">
+              </button>
+              <div x-show="colorPickerOpen" x-cloak
+                   style="position:absolute;top:58px;left:0;z-index:1000;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,.4);width:236px">
+                <template x-if="recentColors.length > 0">
+                  <div style="margin-bottom:7px">
+                    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Recent</div>
+                    <div style="display:flex;gap:3px;flex-wrap:wrap">
+                      <template x-for="c in recentColors" :key="c">
+                        <button type="button" @click="pickColor(c)" :title="c"
+                                :style="'width:20px;height:20px;background:'+c+';border-radius:2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)'+(newProject.color===c?',0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.5)':'')">
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+                <div style="display:grid;grid-template-columns:repeat(10,20px);gap:3px;margin-bottom:8px">
+                  <template x-for="c in _swatchPalette" :key="c">
+                    <button type="button" @click="pickColor(c)" :title="c"
+                            :style="'width:20px;height:20px;background:'+c+';border-radius:2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)'+(newProject.color===c?',0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.5)':'')">
+                    </button>
+                  </template>
+                </div>
+                <input class="field-input" type="text" :value="newProject.color"
+                       @input="onColorHexInput($event.target.value)"
+                       @keydown.stop
+                       style="font-family:monospace;font-size:12px;width:100%;box-sizing:border-box"
+                       placeholder="#000000" maxlength="7">
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Default profile (optional)</div>
+              <select class="field-input" style="width:220px"
+                @change="newProject.default_browser = $event.target.value.split('|')[0] || ''; newProject.default_profile_dir = $event.target.value.split('|')[1] || ''; newProject.default_profile_name = profiles.find(p => p.browser === $event.target.value.split('|')[0] && p.profile_dir === $event.target.value.split('|')[1])?.display_name || ''">
+                <option value="">None — set per link</option>
+                <template x-for="p in profiles.filter(p => p.active)" :key="p.browser + p.profile_dir">
+                  <option :value="p.browser + '|' + p.profile_dir"
+                          x-text="(p.browser === 'chrome' ? 'Chrome' : 'Edge') + ' / ' + p.display_name + '  (' + p.profile_dir + ')'"></option>
+                </template>
+              </select>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary" @click="createProject()">Create</button>
+              <button class="btn" @click="showAddProject = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <template x-if="projects.length === 0 && !showAddProject">
+          <div class="empty-state">
+            <div class="empty-icon">&#9670;</div>
+            <p>No projects yet. Create one to start organizing your links.</p>
+          </div>
+        </template>
+
+        <!-- Project card grid -->
+        <div class="project-grid">
+          <template x-for="col in projectColumns" :key="col.index">
+            <div class="project-column" :data-col-index="col.index"
+                 x-init="$nextTick(() => initProjectSort($el, col.index))">
+              <div class="col-drop-placeholder" x-show="col.projects.length === 0 && _draggingProject">Drop here</div>
+              <template x-for="proj in col.projects" :key="proj.id">
+                <div class="project-card" :data-project-id="proj.id">
+              <!-- Card header -->
+              <div class="project-card-header" :style="'border-left-color:' + proj.color">
+                <button class="btn" style="padding:2px 6px;font-size:13px;border:none;background:none;color:var(--muted)"
+                        @click="toggleCollapse(proj.id)" :title="collapsedProjects[proj.id] ? 'Expand' : 'Collapse'">
+                  <span x-text="collapsedProjects[proj.id] ? '&#9654;' : '&#9660;'"></span>
+                </button>
+                <span style="font-weight:600;font-size:14px;flex:1" x-text="proj.name"></span>
+                <span style="font-size:11px;color:var(--muted)" x-show="proj.default_profile_name && collapsedProjects[proj.id]"
+                      x-text="proj.default_profile_name"></span>
+                <span style="font-size:11px;color:var(--muted)" x-show="collapsedProjects[proj.id]"
+                      x-text="proj.links.length + ' link' + (proj.links.length !== 1 ? 's' : '')"></span>
+                <button class="btn" style="padding:2px 8px;font-size:12px"
+                        @click="editingProject[proj.id] ? cancelEditProject(proj.id) : startEditProject(proj)"
+                        :title="editingProject[proj.id] ? 'Cancel edit' : 'Edit project'">&#9998;</button>
+              </div>
+
+              <!-- Project edit form -->
+              <div x-show="editingProject[proj.id]"
+                   style="padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(79,142,247,.04)">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <input class="field-input" style="width:100%"
+                         :value="editingProject[proj.id]?.name || ''"
+                         @input="editingProject[proj.id] && (editingProject[proj.id].name = $event.target.value)"
+                         placeholder="Project name">
+                  <div style="position:relative" @click.outside="editProjectColorPickerOpen = false">
+                    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Color</div>
+                    <button type="button" @click="editProjectColorPickerOpen = !editProjectColorPickerOpen"
+                            :style="'width:44px;height:32px;background:'+(editingProject[proj.id]?.color||'#4A90D9')+';border:1px solid var(--border);border-radius:5px;cursor:pointer'">
+                    </button>
+                    <div x-show="editProjectColorPickerOpen" x-cloak
+                         style="position:absolute;top:58px;left:0;z-index:1000;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,.4);width:236px">
+                      <template x-if="recentColors.length > 0">
+                        <div style="margin-bottom:7px">
+                          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Recent</div>
+                          <div style="display:flex;gap:3px;flex-wrap:wrap">
+                            <template x-for="c in recentColors" :key="c">
+                              <button type="button" @click="pickProjectEditColor(proj.id, c)" :title="c"
+                                      :style="'width:20px;height:20px;background:'+c+';border-radius:2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)'+(editingProject[proj.id]?.color===c?',0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.5)':'')">
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                      <div style="display:grid;grid-template-columns:repeat(10,20px);gap:3px;margin-bottom:8px">
+                        <template x-for="c in _swatchPalette" :key="c">
+                          <button type="button" @click="pickProjectEditColor(proj.id, c)" :title="c"
+                                  :style="'width:20px;height:20px;background:'+c+';border-radius:2px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)'+(editingProject[proj.id]?.color===c?',0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.5)':'')">
+                          </button>
+                        </template>
+                      </div>
+                      <input class="field-input" type="text" :value="editingProject[proj.id]?.color || '#4A90D9'"
+                             @input="if(editingProject[proj.id]){ const v=$event.target.value; if(/^#[0-9a-f]{6}$/i.test(v)) editingProject[proj.id].color=v; }"
+                             @keydown.stop
+                             style="font-family:monospace;font-size:12px;width:100%;box-sizing:border-box"
+                             placeholder="#000000" maxlength="7">
+                    </div>
+                  </div>
+                  <select class="field-input" style="width:100%"
+                          @change="if(editingProject[proj.id]){ const v=$event.target.value; editingProject[proj.id].default_browser=v.split('|')[0]||''; editingProject[proj.id].default_profile_dir=v.split('|')[1]||''; editingProject[proj.id].default_profile_name=profiles.find(p=>p.browser===v.split('|')[0]&&p.profile_dir===v.split('|')[1])?.display_name||''; }">
+                    <option value="">No default profile</option>
+                    <template x-for="p in profiles.filter(p => p.active)" :key="p.browser + p.profile_dir">
+                      <option :value="p.browser + '|' + p.profile_dir"
+                              :selected="editingProject[proj.id]?.default_browser === p.browser && editingProject[proj.id]?.default_profile_dir === p.profile_dir"
+                              x-text="(p.browser === 'chrome' ? 'Chrome' : 'Edge') + ' / ' + p.display_name"></option>
+                    </template>
+                  </select>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <label style="font-size:11px;color:var(--muted);white-space:nowrap">Column</label>
+                    <input type="number" class="field-input" min="1" step="1" style="width:64px"
+                           :value="(editingProject[proj.id]?.column_index ?? 0) + 1"
+                           @input="editingProject[proj.id] && (editingProject[proj.id].column_index = Math.max(0, (parseInt($event.target.value) || 1) - 1))"
+                           title="Column number (1 = leftmost)">
+                    <span style="font-size:11px;color:var(--muted)">left-to-right, starting at 1</span>
+                  </div>
+                  <div style="display:flex;gap:6px;margin-top:2px">
+                    <button class="btn btn-primary" style="font-size:12px" @click="saveEditProject(proj.id)">Save</button>
+                    <button class="btn" style="font-size:12px" @click="cancelEditProject(proj.id)">Cancel</button>
+                    <button class="btn btn-danger" style="font-size:12px;margin-left:auto"
+                            @click="confirm('Delete project and all its links?') && deleteProject(proj.id)">Delete project</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Links list (hidden when collapsed) -->
+              <div class="link-list" x-show="!collapsedProjects[proj.id]"
+                   x-init="$nextTick(() => initLinkSort($el, proj.id))">
+                <template x-if="proj.links.length === 0">
+                  <div style="padding:12px 16px;font-size:12px;color:var(--muted)">No links yet.</div>
+                </template>
+                <template x-for="link in proj.links" :key="link.id">
+                  <div class="link-item" :data-link-id="link.id">
+                    <!-- Normal row (not editing) -->
+                    <div class="link-row" x-show="!editingLink[link.id]">
+                      <span class="link-type-badge" :class="link.link_type === 'url' ? 'link-type-url' : (_fileExt(link.path) ? 'link-type-file' : 'link-type-folder')"
+                            x-text="link.link_type === 'url' ? 'WEB' : (_fileExt(link.path) || 'DIR')"></span>
+                      <span class="link-name" x-text="link.name" :title="link.path"></span>
+                      <span class="link-notes" x-show="link.notes" x-text="link.notes"></span>
+                      <button class="btn" style="margin-left:auto;padding:3px 10px;font-size:12px"
+                              @click="openLink(link.id)">Open</button>
+                      <button class="btn" style="padding:3px 8px;font-size:11px"
+                              @click="startEditLink(link)" title="Edit">&#9998;</button>
+                    </div>
+                    <!-- Edit form (inline) -->
+                    <div x-show="editingLink[link.id]"
+                         style="padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(79,142,247,.04)">
+                      <div style="display:flex;flex-direction:column;gap:6px">
+                        <input class="field-input" style="width:100%"
+                               :value="editingLink[link.id]?.name || ''"
+                               @input="editingLink[link.id] && (editingLink[link.id].name = $event.target.value)"
+                               placeholder="Name">
+                        <input class="field-input" style="width:100%"
+                               :value="editingLink[link.id]?.path || ''"
+                               @input="editingLink[link.id] && (editingLink[link.id].path = $event.target.value)"
+                               placeholder="URL (https://...) or folder path (C:\...)">
+                        <input class="field-input" style="width:100%"
+                               :value="editingLink[link.id]?.notes || ''"
+                               @input="editingLink[link.id] && (editingLink[link.id].notes = $event.target.value)"
+                               placeholder="Notes (optional)">
+                        <select class="field-input" style="width:100%" @change="onEditProfileSelect(link.id, $event)">
+                          <option value="">Use project default profile</option>
+                          <template x-for="p in profiles.filter(p => p.active)" :key="p.browser + p.profile_dir">
+                            <option :value="p.browser + '|' + p.profile_dir"
+                                    :selected="editingLink[link.id]?.browser === p.browser && editingLink[link.id]?.profile_dir === p.profile_dir"
+                                    x-text="(p.browser === 'chrome' ? 'Chrome' : 'Edge') + ' / ' + p.display_name + '  (' + p.profile_dir + ')'"></option>
+                          </template>
+                        </select>
+                        <label style="font-size:11px;color:var(--text-muted);margin-bottom:2px">Move to project</label>
+                        <select class="field-input" style="width:100%"
+                                x-model.number="editingLink[link.id].project_id">
+                          <template x-for="p in projects" :key="p.id">
+                            <option :value="p.id" x-text="p.name"></option>
+                          </template>
+                        </select>
+                        <div style="display:flex;gap:6px;margin-top:2px">
+                          <button class="btn btn-primary" style="font-size:12px" @click="saveEditLink(proj.id, link.id)">Save</button>
+                          <button class="btn" style="font-size:12px" @click="cancelEditLink(link.id)">Cancel</button>
+                          <button class="btn btn-danger" style="font-size:12px;margin-left:auto"
+                                  @click="confirm('Delete this link?') && deleteLink(proj.id, link.id)">Delete</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Add link form (hidden when collapsed) -->
+              <div x-show="projectAddingLink[proj.id] && !collapsedProjects[proj.id]"
+                   style="padding:12px 16px;border-top:1px solid var(--border)">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <input class="field-input"
+                         :value="newLink[proj.id]?.name || ''"
+                         @input="newLink[proj.id] = newLink[proj.id] || {}; newLink[proj.id].name = $event.target.value"
+                         placeholder="Name" style="width:100%">
+                  <input class="field-input"
+                         :value="newLink[proj.id]?.path || ''"
+                         @input="newLink[proj.id] = newLink[proj.id] || {}; newLink[proj.id].path = $event.target.value"
+                         placeholder="URL (https://...) or folder path (C:\...)" style="width:100%">
+                  <input class="field-input"
+                         :value="newLink[proj.id]?.notes || ''"
+                         @input="newLink[proj.id] = newLink[proj.id] || {}; newLink[proj.id].notes = $event.target.value"
+                         placeholder="Notes (optional)" style="width:100%">
+                  <select class="field-input" style="width:100%" @change="onProfileSelect(proj.id, $event)">
+                    <option value="">Use project default profile</option>
+                    <template x-for="p in profiles.filter(p => p.active)" :key="p.browser + p.profile_dir">
+                      <option :value="p.browser + '|' + p.profile_dir"
+                              x-text="(p.browser === 'chrome' ? 'Chrome' : 'Edge') + ' / ' + p.display_name + '  (' + p.profile_dir + ')'"></option>
+                    </template>
+                  </select>
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-primary" style="font-size:12px" @click="submitLink(proj.id)">Add</button>
+                    <button class="btn" style="font-size:12px" @click="cancelAddLink(proj.id)">Cancel</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add link button (hidden when collapsed) -->
+              <div x-show="!projectAddingLink[proj.id] && !collapsedProjects[proj.id]"
+                   style="padding:10px 16px;border-top:1px solid var(--border)">
+                <button class="btn" style="font-size:12px;width:100%" @click="startAddLink(proj.id)">
+                  + Add link
+                </button>
+              </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div x-show="section === 'settings'">
+
+        <!-- Browser Profiles -->
+        <div class="section-header" style="margin-top:4px">
+          <h2>Browser Profiles</h2>
+          <span class="count" x-text="profiles.length + ' detected'"></span>
+          <button class="btn btn-primary" style="margin-left:auto;font-size:12px"
+                  @click="saveAllProfileLabels()" x-show="profiles.length > 0">
+            Save Labels
+          </button>
+        </div>
+        <div class="card" style="margin-bottom:24px;padding:0;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Browser</th>
+                <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Profile Dir</th>
+                <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Custom Label</th>
+                <th style="padding:9px 14px;text-align:center;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="p in profiles" :key="p.browser + p.profile_dir">
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 14px;color:var(--muted)"
+                      x-text="p.browser === 'chrome' ? 'Chrome' : 'Edge'"></td>
+                  <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:var(--muted)"
+                      x-text="p.profile_dir"></td>
+                  <td style="padding:6px 14px">
+                    <input class="field-input" style="width:100%;min-width:160px"
+                      placeholder="Custom label (leave blank to reset)"
+                      :value="profileLabels[p.browser + '|' + p.profile_dir] || ''"
+                      @input="profileLabels[p.browser + '|' + p.profile_dir] = $event.target.value">
+                  </td>
+                  <td style="padding:6px 14px;text-align:center">
+                    <button :class="p.active ? 'btn btn-primary' : 'btn'"
+                            style="font-size:11px;padding:3px 10px;min-width:52px"
+                            @click="toggleProfileActive(p.browser, p.profile_dir)"
+                            :title="p.active ? 'Click to hide from dropdowns' : 'Click to show in dropdowns'"
+                            x-text="p.active ? 'On' : 'Off'"></button>
+                  </td>
+                </tr>
+              </template>
+              <template x-if="profiles.length === 0">
+                <tr>
+                  <td colspan="4" style="padding:20px 14px;text-align:center;color:var(--muted);font-size:13px">
+                    No browser profiles detected. Create named profiles in Chrome or Edge first — see the README for steps.
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div style="padding:8px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
+            Labels override the browser's default profile name in all dropdowns. Leave blank to reset to default.
+          </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="section-header">
+          <h2>Configuration</h2>
+        </div>
+        <template x-if="Object.keys(config).length === 0">
+          <div class="empty-state">
+            <div class="empty-icon">&#9881;</div>
+            <p>No configuration keys found.</p>
+          </div>
+        </template>
+        <template x-for="[key, entry] in Object.entries(config)" :key="key">
+          <div class="card" style="margin-bottom:10px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:4px" x-text="key"></div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px" x-text="entry.description"></div>
+            <input class="field-input" style="width:240px"
+              :value="entry.value === null ? '' : String(entry.value)"
+              @change="saveConfig(key, $event.target.value)"
+            >
+          </div>
+        </template>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/static/js/bookmarks.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
