@@ -8,11 +8,11 @@ _LOCAL_APPDATA = os.environ.get("LOCALAPPDATA", "")
 _DEFAULTS: dict[str, tuple[Any, str]] = {
     "bookmarks.chrome_exe": (
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        "Path to chrome.exe.",
+        r"Path to chrome.exe. Default: C:\Program Files\Google\Chrome\Application\chrome.exe",
     ),
     "bookmarks.chrome_user_data": (
         os.path.join(_LOCAL_APPDATA, "Google", "Chrome", "User Data"),
-        "Path to Chrome User Data directory (parent of profile folders like Default, Profile 1).",
+        "Path to Chrome User Data directory (parent of Default, Profile 1, etc.). To find it: open chrome://version in Chrome and look at Profile Path — copy everything above the last folder name.",
     ),
     "bookmarks.column_width": (
         320,
@@ -28,11 +28,11 @@ _DEFAULTS: dict[str, tuple[Any, str]] = {
     ),
     "bookmarks.edge_exe": (
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-        "Path to msedge.exe.",
+        r"Path to msedge.exe. Default: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
     ),
     "bookmarks.edge_user_data": (
         os.path.join(_LOCAL_APPDATA, "Microsoft", "Edge", "User Data"),
-        "Path to Edge User Data directory.",
+        "Path to Edge User Data directory. To find it: open edge://version in Edge and look at Profile Path — copy everything above the last folder name.",
     ),
 }
 
