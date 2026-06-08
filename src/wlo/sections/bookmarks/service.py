@@ -84,9 +84,27 @@ def set_profile_active(browser: str, profile_dir: str, active: bool) -> None:
             )
 
 
+def _get_browser_user_data() -> dict[str, Path]:
+    from wlo.db.config_store import get_config
+    result = {}
+    for browser, default_path in BROWSER_USER_DATA.items():
+        val = get_config(f"bookmarks.{browser}_user_data")
+        result[browser] = Path(val) if val else default_path
+    return result
+
+
+def _get_browser_exes() -> dict[str, Path]:
+    from wlo.db.config_store import get_config
+    result = {}
+    for browser, default_path in BROWSER_EXES.items():
+        val = get_config(f"bookmarks.{browser}_exe")
+        result[browser] = Path(val) if val else default_path
+    return result
+
+
 def _scan_profiles() -> list[BrowserProfile]:
     results: list[BrowserProfile] = []
-    for browser, base in BROWSER_USER_DATA.items():
+    for browser, base in _get_browser_user_data().items():
         if not base.exists():
             continue
         for entry in sorted(base.iterdir()):
@@ -228,10 +246,11 @@ def open_link(link_id: int) -> bool:
         browser = link_row["browser"] or (proj_row["default_browser"] if proj_row else None)
         profile_dir = link_row["profile_dir"] or (proj_row["default_profile_dir"] if proj_row else None)
 
+        browser_exes = _get_browser_exes()
         if link_type == "folder":
             subprocess.Popen(["explorer.exe", path], creationflags=_DETACHED)
-        elif browser and profile_dir and browser in BROWSER_EXES:
-            exe = str(BROWSER_EXES[browser])
+        elif browser and profile_dir and browser in browser_exes:
+            exe = str(browser_exes[browser])
             subprocess.Popen(
                 [exe, f"--profile-directory={profile_dir}", path],
                 creationflags=_DETACHED,
