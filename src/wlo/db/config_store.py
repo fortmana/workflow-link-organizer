@@ -1,23 +1,8 @@
 import json
-import os
 from typing import Any
 from wlo.db.connection import get_db
 
-_LOCAL_APPDATA = os.environ.get("LOCALAPPDATA", "")
-
 _DEFAULTS: dict[str, tuple[Any, str]] = {
-    "bookmarks.chrome_exe": (
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        r"Path to chrome.exe. Default: C:\Program Files\Google\Chrome\Application\chrome.exe",
-    ),
-    "bookmarks.chrome_user_data": (
-        os.path.join(_LOCAL_APPDATA, "Google", "Chrome", "User Data"),
-        "Path to Chrome User Data directory (parent of Default, Profile 1, etc.). To find it: open chrome://version in Chrome and look at Profile Path — copy everything above the last folder name.",
-    ),
-    "bookmarks.column_width": (
-        320,
-        "Width in pixels for each project column. Increase for wider cards, decrease to fit more columns.",
-    ),
     "bookmarks.default_browser": (
         "chrome",
         "Default browser when creating a new project.",
@@ -26,13 +11,9 @@ _DEFAULTS: dict[str, tuple[Any, str]] = {
         None,
         "Default project for quick-add links. Set to a project name (e.g. 'Inbox') or its numeric ID.",
     ),
-    "bookmarks.edge_exe": (
-        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-        r"Path to msedge.exe. Default: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-    ),
-    "bookmarks.edge_user_data": (
-        os.path.join(_LOCAL_APPDATA, "Microsoft", "Edge", "User Data"),
-        "Path to Edge User Data directory. To find it: open edge://version in Edge and look at Profile Path — copy everything above the last folder name.",
+    "bookmarks.column_width": (
+        320,
+        "Width in pixels for each project column. Increase for wider cards, decrease to fit more columns.",
     ),
 }
 
