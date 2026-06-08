@@ -389,7 +389,7 @@
               <template x-if="profiles.length === 0">
                 <tr>
                   <td colspan="4" style="padding:20px 14px;text-align:center;color:var(--muted);font-size:13px">
-                    No browser profiles detected. Create named profiles in Chrome or Edge first — see the README for steps.
+                    No browser profiles detected. If you have Chrome or Edge installed, check the Browser Paths section below to confirm the paths are correct.
                   </td>
                 </tr>
               </template>
@@ -398,6 +398,48 @@
           <div style="padding:8px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
             Labels override the browser's default profile name in all dropdowns. Leave blank to reset to default.
           </div>
+        </div>
+
+        <!-- Browser Paths -->
+        <div class="section-header" style="margin-top:4px">
+          <h2>Browser Paths</h2>
+        </div>
+        <div class="card" style="margin-bottom:24px">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.6">
+            Update these if no profiles are detected above.<br>
+            <strong>Finding your Chrome User Data directory:</strong> open <code>chrome://version</code> in Chrome and look at <em>Profile Path</em> &mdash; copy everything above the last folder (e.g. copy up to but not including <code>\Default</code>). For Edge, open <code>edge://version</code> and do the same.
+          </p>
+          <div style="display:grid;gap:14px">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Chrome User Data Directory</div>
+              <input class="field-input" style="width:100%;max-width:600px"
+                :value="config['bookmarks.chrome_user_data']?.value ?? ''"
+                @change="saveConfig('bookmarks.chrome_user_data', $event.target.value)"
+                placeholder="C:\Users\[username]\AppData\Local\Google\Chrome\User Data">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Chrome Executable</div>
+              <input class="field-input" style="width:100%;max-width:600px"
+                :value="config['bookmarks.chrome_exe']?.value ?? ''"
+                @change="saveConfig('bookmarks.chrome_exe', $event.target.value)"
+                placeholder="C:\Program Files\Google\Chrome\Application\chrome.exe">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Edge User Data Directory</div>
+              <input class="field-input" style="width:100%;max-width:600px"
+                :value="config['bookmarks.edge_user_data']?.value ?? ''"
+                @change="saveConfig('bookmarks.edge_user_data', $event.target.value)"
+                placeholder="C:\Users\[username]\AppData\Local\Microsoft\Edge\User Data">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Edge Executable</div>
+              <input class="field-input" style="width:100%;max-width:600px"
+                :value="config['bookmarks.edge_exe']?.value ?? ''"
+                @change="saveConfig('bookmarks.edge_exe', $event.target.value)"
+                placeholder="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe">
+            </div>
+          </div>
+          <div style="margin-top:14px;font-size:11px;color:var(--muted)">Changes take effect immediately &mdash; no restart needed.</div>
         </div>
 
         <!-- Configuration -->
@@ -410,7 +452,7 @@
             <p>No configuration keys found.</p>
           </div>
         </template>
-        <template x-for="[key, entry] in Object.entries(config)" :key="key">
+        <template x-for="[key, entry] in Object.entries(config).filter(([k]) => !['bookmarks.chrome_exe','bookmarks.chrome_user_data','bookmarks.edge_exe','bookmarks.edge_user_data'].includes(k))" :key="key">
           <div class="card" style="margin-bottom:10px">
             <div style="font-size:13px;font-weight:500;margin-bottom:4px" x-text="key"></div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:10px" x-text="entry.description"></div>
