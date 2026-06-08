@@ -96,6 +96,38 @@ Once your profiles exist, the app detects them automatically under
 
 ---
 
+## Customizing profiles in Settings
+
+Go to **Settings → Browser Profiles**. Chrome and Edge profiles are detected
+automatically from the standard Windows user data directories — no manual path
+configuration is needed.
+
+### What each column does
+
+| Column | What it is |
+|---|---|
+| **Browser** | Chrome or Edge |
+| **Profile Dir** | Chrome/Edge's internal folder name (e.g. `Default`, `Profile 3`). Read-only — this is the actual folder name on disk and must match exactly for links to open in the right profile. You don't choose this; Chrome assigns it when you create a profile. |
+| **Custom Label** | The display name shown everywhere in the app. Override the default with something meaningful (e.g. `Accordion`, `Client A`, `Personal`). |
+| **Active** | Toggle **Off** to hide a profile from all dropdowns. The profile stays registered — re-enable it any time. |
+
+### Setting custom labels
+Type a label next to each profile you want to rename, then click **Save Labels**.
+Labels appear in every project and link dropdown throughout the app.
+
+### Hiding unused profiles
+If you have old or inactive profiles cluttering the dropdowns, toggle them **Off**.
+They won't appear when assigning profiles to projects or links, but they're still
+registered and can be turned back on any time.
+
+### If no profiles are detected
+The most common cause is that Chrome or Edge hasn't been installed — or has been
+installed but never launched (so the user data directory doesn't exist yet). Open
+Chrome once, then restart the app. Firefox and other browsers are not currently
+supported.
+
+---
+
 ## Quick start (if you're comfortable with the basics)
 
 ```powershell
