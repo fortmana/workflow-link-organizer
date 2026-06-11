@@ -1,4 +1,4 @@
-# Workflow Link Organizer — first-run setup.
+# Workflow Link Organizer - first-run setup.
 # Non-interactive: safe to run directly or to let Claude Code run for you.
 #   powershell -ExecutionPolicy Bypass -File setup.ps1
 
@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
-Write-Host "=== Workflow Link Organizer — Setup ===" -ForegroundColor Cyan
+Write-Host "=== Workflow Link Organizer - Setup ===" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. Check Python ------------------------------------------------------------
